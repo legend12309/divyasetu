@@ -1,0 +1,81 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Helper functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    function isFamilyMember(familyId) {
+      return isAuthenticated() && 
+             get(/databases/$(database)/documents/families/$(familyId)).data.members.hasAny([request.auth.uid]);
+    }
+    
+    function isAdmin(familyId) {
+      return isAuthenticated() && 
+             get(/databases/$(database)/documents/families/$(familyId)).data.admins.hasAny([request.auth.uid]);
+    }
+    
+    // Users collection
+    match /users/{userId} {
+      allow read: if isAuthenticated();
+      allow write: if request.auth.uid == userId;
+    }
+    
+    // Families collection
+    match /families/{familyId} {
+      allow read: if isFamilyMember(familyId);
+      allow create: if isAuthenticated();
+      allow update, delete: if isAdmin(familyId);
+    }
+    
+    // Groceries collection
+    match /groceries/{groceryId} {
+      allow read: if isFamilyMember(resource.data.familyId);
+      allow create: if isAuthenticated();
+      allow update: if isFamilyMember(resource.data.familyId);
+      allow delete: if isFamilyMember(resource.data.familyId);
+    }
+    
+    // Meals collection
+    match /meals/{mealId} {
+      allow read: if isFamilyMember(resource.data.familyId);
+      allow create: if isAuthenticated();
+      allow update: if isFamilyMember(resource.data.familyId);
+      allow delete: if isFamilyMember(resource.data.familyId);
+    }
+    
+    // Chores collection
+    match /chores/{choreId} {
+      allow read: if isFamilyMember(resource.data.familyId);
+      allow create: if isAuthenticated();
+      allow update: if isFamilyMember(resource.data.familyId);
+      allow delete: if isFamilyMember(resource.data.familyId);
+    }
+    
+    // Budgets collection
+    match /budgets/{budgetId} {
+      allow read: if isFamilyMember(resource.data.familyId);
+      allow create: if isAuthenticated();
+      allow update: if isFamilyMember(resource.data.familyId);
+      allow delete: if isFamilyMember(resource.data.familyId);
+    }
+    
+    // Transactions collection
+    match /transactions/{transactionId} {
+      allow read: if isFamilyMember(resource.data.familyId);
+      allow create: if isAuthenticated();
+      allow update, delete: if isAdmin(resource.data.familyId);
+    }
+    
+    // Rituals collection
+    match /rituals/{ritualId} {
+      allow read: if isFamilyMember(resource.data.familyId);
+      allow create: if isAuthenticated();
+      allow update: if isFamilyMember(resource.data.familyId);
+      allow delete: if isFamilyMember(resource.data.familyId);
+    }
+  }
+}
+
